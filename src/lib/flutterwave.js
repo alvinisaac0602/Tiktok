@@ -3,7 +3,22 @@
  * Uses the Flutterwave inline JS SDK
  */
 
-const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY || 'FLWPUBK_TEST-DEMO'
+const FLW_PUBLIC_KEY = import.meta.env.VITE_FLW_PUBLIC_KEY
+
+export function getFlutterwaveConfigError() {
+  if (!FLW_PUBLIC_KEY) {
+    return 'Missing Flutterwave public key. Set VITE_FLW_PUBLIC_KEY in your .env file.'
+  }
+  return null
+}
+
+function getFlutterwavePublicKey() {
+  const error = getFlutterwaveConfigError()
+  if (error) {
+    throw new Error(error)
+  }
+  return FLW_PUBLIC_KEY
+}
 
 /**
  * Load the Flutterwave inline script dynamically
@@ -50,7 +65,7 @@ export async function initiatePayment(config) {
   } = config
 
   window.FlutterwaveCheckout({
-    public_key: FLW_PUBLIC_KEY,
+    public_key: getFlutterwavePublicKey(),
     tx_ref: txRef,
     amount,
     currency: 'UGX',

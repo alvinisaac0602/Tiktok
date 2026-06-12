@@ -7,7 +7,11 @@ import ConfirmPage from './pages/ConfirmPage'
 import VendorLogin from './pages/VendorLogin'
 import VendorDashboard from './pages/VendorDashboard'
 import AdminPanel from './pages/AdminPanel'
+import AdminLogin from './pages/AdminLogin'
 import VendorProducts from './pages/VendorProducts'
+import AdminAnalytics from './pages/AdminAnalytics'
+import StorePage from './pages/StorePage'
+import LandingPage from './pages/LandingPage'
 
 export default function App() {
   return (
@@ -31,6 +35,7 @@ export default function App() {
       <Routes>
         {/* Customer-facing routes */}
         <Route path="/p/:productId"      element={<ProductPage />} />
+        <Route path="/store/:storeSlug"  element={<StorePage />} />
         <Route path="/checkout/:productId" element={<CheckoutPage />} />
         <Route path="/confirm/:orderId"  element={<ConfirmPage />} />
 
@@ -40,11 +45,13 @@ export default function App() {
         <Route path="/vendor/products"   element={<VendorProducts />} />
 
         {/* Admin */}
+        <Route path="/admin/login"       element={<AdminLogin />} />
         <Route path="/admin"             element={<AdminPanel />} />
+        <Route path="/admin/analytics"   element={<AdminAnalytics />} />
 
-        {/* Default redirect → demo product */}
-        <Route path="/" element={<Navigate to="/p/demo" replace />} />
-        <Route path="*" element={<Navigate to="/p/demo" replace />} />
+        {/* Default route to Landing Page and wildcard redirect */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

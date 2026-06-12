@@ -3,26 +3,27 @@ import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { Spinner } from '../components/UI'
-import { CheckCircle2, XCircle, Clock, ArrowRight, Share2 } from 'lucide-react'
+import { CheckCircle2, Clock, ArrowRight, Share2, Phone, Banknote } from 'lucide-react'
 
 export default function ConfirmPage() {
   const { orderId } = useParams()
   const [searchParams] = useSearchParams()
-  const paymentStatus = searchParams.get('status')
+  const paymentStatus = searchParams.get('status') // 'success' | 'cod' | null
   const flwRef = searchParams.get('ref')
 
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const isCOD     = paymentStatus === 'cod'
+  const isSuccess = paymentStatus === 'success'
+
   useEffect(() => {
     const load = async () => {
-      if (!orderId || orderId === 'demo') {
+      if (!orderId || orderId.startsWith('demo')) {
         setOrder({
-          id: 'demo',
-          customer_phone: '0771234567',
-          total_amount: 85000,
-          quantity: 1,
-          status: paymentStatus === 'success' ? 'paid' : 'pending_payment',
+          id: 'demo', customer_phone: '0771234567', total_amount: 85000,
+          quantity: 1, payment_method: isCOD ? 'cod' : 'online',
+          status: isCOD ? 'pending_cod' : 'paid',
           customer_location_zone: 'Kampala Central',
           products: { title: 'Premium Wireless Earbuds Pro' },
         })
@@ -30,39 +31,32 @@ export default function ConfirmPage() {
         return
       }
       const { data } = await supabase
-        .from('orders')
-        .select('*, products(title, images)')
-        .eq('id', orderId)
-        .single()
+        .from('orders').select('*, products(title, images), vendors(store_name, store_phone, store_whatsapp)')
+        .eq('id', orderId).single()
       setOrder(data)
       setLoading(false)
     }
     load()
 
-    // Poll for status update if pending
-    if (paymentStatus === 'success') {
+    // Poll for status update if online payment (webhook may update separately)
+    if (isSuccess && orderId && !orderId.startsWith('demo')) {
       const interval = setInterval(async () => {
-        const { data } = await supabase
-          .from('orders')
-          .select('status')
-          .eq('id', orderId)
-          .single()
-        if (data?.status === 'paid') {
-          setOrder((o) => ({ ...o, status: 'paid' }))
-          clearInterval(interval)
-        }
+        const { data } = await supabase.from('orders').select('status').eq('id', orderId).single()
+        if (data?.status === 'paid') { setOrder(o => ({ ...o, status: 'paid' })); clearInterval(interval) }
       }, 3000)
       return () => clearInterval(interval)
     }
   }, [orderId, paymentStatus])
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Spinner size="lg" />
-    </div>
-  )
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Spinner size="lg" /></div>
 
-  const isPaid = order?.status === 'paid' || paymentStatus === 'success'
+  const isPaid = order?.status === 'paid' || isSuccess
+  const isCodOrder = order?.payment_method === 'cod' || isCOD
+
+  const vendorWhatsapp = order?.vendors?.store_whatsapp || order?.vendors?.store_phone
+  const waLink = vendorWhatsapp
+    ? `https://wa.me/${vendorWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi! I placed an order for ${order?.products?.title || 'your product'}. Order ref: ${orderId?.slice(0,8)}`)}`
+    : null
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12 page-enter">
@@ -70,7 +64,22 @@ export default function ConfirmPage() {
 
         {/* Status card */}
         <div className="card text-center space-y-4 py-10">
-          {isPaid ? (
+          {isCodOrder ? (
+            <>
+              <div className="flex justify-center">
+                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center animate-fade-in">
+                  <Banknote size={44} className="text-amber-500" />
+                </div>
+              </div>
+              <div>
+                <h1 className="font-display font-bold text-2xl text-slate-900">Order Confirmed! 🎉</h1>
+                <p className="text-slate-500 text-sm mt-1.5">
+                  Your order is placed. The vendor will call you to confirm and arrange delivery.
+                  Pay cash when your order arrives.
+                </p>
+              </div>
+            </>
+          ) : isPaid ? (
             <>
               <div className="flex justify-center">
                 <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center animate-fade-in">
@@ -78,9 +87,9 @@ export default function ConfirmPage() {
                 </div>
               </div>
               <div>
-                <h1 className="font-display font-bold text-2xl text-slate-900">Payment Confirmed!</h1>
+                <h1 className="font-display font-bold text-2xl text-slate-900">Payment Confirmed! ✅</h1>
                 <p className="text-slate-500 text-sm mt-1.5">
-                  Your order has been placed and the vendor has been notified.
+                  Your payment went through. The vendor has been notified and will process your order.
                 </p>
               </div>
             </>
@@ -92,10 +101,8 @@ export default function ConfirmPage() {
                 </div>
               </div>
               <div>
-                <h1 className="font-display font-bold text-2xl text-slate-900">Order Received</h1>
-                <p className="text-slate-500 text-sm mt-1.5">
-                  Awaiting payment confirmation. This updates automatically.
-                </p>
+                <h1 className="font-display font-bold text-2xl text-slate-900">Awaiting Confirmation</h1>
+                <p className="text-slate-500 text-sm mt-1.5">Payment confirmation in progress. This updates automatically.</p>
               </div>
             </>
           )}
@@ -117,8 +124,14 @@ export default function ConfirmPage() {
                 <span className="font-semibold text-slate-800">{order.quantity || 1}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Total Paid</span>
+                <span className="text-slate-500">Amount</span>
                 <span className="font-bold text-brand-700 text-base">{formatUGX(order.total_amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Payment</span>
+                <span className={`font-semibold text-sm ${isCodOrder ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  {isCodOrder ? '💵 Cash on Delivery' : '💳 Paid Online'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Phone</span>
@@ -136,43 +149,48 @@ export default function ConfirmPage() {
               )}
             </div>
 
-            {/* Status badge */}
             <div className={`mt-2 px-4 py-2 rounded-xl text-sm font-semibold text-center ${
-              isPaid
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-amber-50 text-amber-700'
+              isCodOrder ? 'bg-amber-50 text-amber-700'
+              : isPaid   ? 'bg-emerald-50 text-emerald-700'
+                         : 'bg-amber-50 text-amber-700'
             }`}>
-              {isPaid ? '✅ Payment Successful' : '⏳ Awaiting Confirmation…'}
+              {isCodOrder ? '🚚 Cash on Delivery — Vendor will contact you'
+               : isPaid   ? '✅ Payment Successful'
+                          : '⏳ Awaiting Confirmation…'}
             </div>
           </div>
         )}
 
-        {/* What's next */}
+        {/* What happens next */}
         <div className="card space-y-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">What Happens Next?</p>
-          {[
-            { step: '1', text: 'Vendor receives your order instantly' },
-            { step: '2', text: 'Vendor contacts you on your phone number' },
+          {(isCodOrder ? [
+            { step: '1', text: 'Vendor calls you on your phone to confirm the order' },
+            { step: '2', text: 'Vendor arranges delivery to your location' },
+            { step: '3', text: 'Pay cash when order arrives — inspect before paying' },
+          ] : [
+            { step: '1', text: 'Vendor receives your order & payment notification instantly' },
+            { step: '2', text: 'Vendor contacts you on your phone number to confirm delivery' },
             { step: '3', text: 'Delivery arranged directly with vendor' },
-          ].map(({ step, text }) => (
+          ]).map(({ step, text }) => (
             <div key={step} className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                {step}
-              </div>
-              <p className="text-sm text-slate-600">{text}</p>
+              <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{step}</div>
+            <p className="text-sm text-slate-600">{text}</p>
             </div>
           ))}
         </div>
 
-        {/* CTA */}
+        {/* Actions */}
         <div className="flex flex-col gap-3">
+          {waLink && (
+            <a href={waLink} target="_blank" rel="noopener noreferrer"
+              className="btn-primary w-full bg-emerald-500 hover:bg-emerald-600 from-emerald-500 to-emerald-600 justify-center">
+              <Phone size={16} /> Chat Vendor on WhatsApp
+            </a>
+          )}
           <button
-            onClick={() => navigator.share?.({
-              title: 'Check out this product!',
-              url: window.location.origin + `/p/${order?.product_id || 'demo'}`,
-            })}
-            className="btn-secondary w-full"
-          >
+            onClick={() => navigator.share?.({ title: 'Check out this product!', url: window.location.origin + `/p/${order?.product_id || 'demo'}` })}
+            className="btn-secondary w-full">
             <Share2 size={16} /> Share This Product
           </button>
           <Link to="/p/demo" className="btn-primary w-full">
@@ -181,7 +199,10 @@ export default function ConfirmPage() {
         </div>
 
         <p className="text-center text-xs text-slate-400 pb-4">
-          Questions? Contact the vendor directly on {order?.customer_phone || 'your phone'}
+          {isCodOrder
+            ? `Vendor will call ${order?.customer_phone || 'your number'} to confirm.`
+            : `Questions? Contact the vendor directly on ${order?.customer_phone || 'your phone'}`
+          }
         </p>
       </div>
     </div>

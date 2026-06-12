@@ -1,184 +1,272 @@
-# 🛍️ TikShop — Instant TikTok Commerce Checkout System
+# 🛍️ TikShop — Instant TikTok Commerce System
 
-A real-time social commerce payment + order routing engine for TikTok sellers in Uganda.
-
-> Converts TikTok impulse traffic into paid vendor orders in under 60 seconds. Zero friction. No customer accounts required.
+A full-stack TikTok-to-purchase commerce platform. Vendors sign up, upload products, generate creator links, and receive real-time orders with analytics — from TikTok click to delivery dispatch.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Full Feature Set
+
+| Feature | Details |
+|---|---|
+| **Product pages** | Mobile-optimised with image carousel, stock counter, share/like |
+| **Checkout** | Phone + location + optional GPS. Pay online (MTN/Airtel/Card) or Cash on Delivery |
+| **Payments** | Flutterwave inline popup + immediate client-side confirmation + webhook backup |
+| **Vendor portal** | Sign up → upload products → generate creator links → manage orders |
+| **Real-time orders** | Supabase Realtime pushes new orders to vendor dashboard instantly |
+| **Order management** | Status flow: pending → processing → dispatched. COD + Online tracked separately |
+| **Creator links** | Vendor generates `?ref=creatorhandle` links — 5% commission auto-tracked |
+| **Analytics** | Platform-wide funnel: link clicks → page views → checkouts → orders → paid → dispatched |
+| **Admin panel** | Manage all orders, vendors, products, and view platform analytics |
+
+---
+
+## ⚡ Quick Start — Run Locally
 
 ```bash
-# 1. Install dependencies
+cd "c:\Users\user\Desktop\Tiktok"
 npm install
-
-# 2. Copy env file and fill in your keys
-cp .env.example .env
-
-# 3. Run Supabase schema
-# → Open supabase/schema.sql in Supabase SQL Editor and run it
-
-# 4. Start dev server
 npm run dev
 ```
 
----
+Open: **http://localhost:5173**
 
-## ⚙️ Environment Variables
-
-Fill in `.env` with your real values:
-
-| Variable | Description |
-|---|---|
-| `VITE_SUPABASE_URL` | Your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
-| `VITE_FLW_PUBLIC_KEY` | Your Flutterwave public key |
-| `VITE_APP_URL` | Your deployed frontend URL |
+- Customer demo: `http://localhost:5173/p/demo`
+- Vendor portal: `http://localhost:5173/vendor/login`
 
 ---
 
-## 📂 Project Structure
+## 🗄️ Supabase Setup (One-Time)
 
-```
-src/
-├── components/
-│   ├── Navbar.jsx          # Top nav with vendor auth state
-│   └── UI.jsx              # Badges, spinners, stat cards, toasts
-├── hooks/
-│   └── useRealtimeOrders.js # Supabase realtime + vendor auth hooks
-├── lib/
-│   ├── supabase.js         # Supabase client + auth helpers
-│   └── flutterwave.js      # FLW inline payment + UGX formatter
-├── pages/
-│   ├── ProductPage.jsx     # /p/:productId?ref=creator
-│   ├── CheckoutPage.jsx    # /checkout/:productId
-│   ├── ConfirmPage.jsx     # /confirm/:orderId
-│   ├── VendorLogin.jsx     # /vendor/login
-│   ├── VendorDashboard.jsx # /vendor/dashboard  (realtime orders)
-│   ├── VendorProducts.jsx  # /vendor/products   (product management)
-│   └── AdminPanel.jsx      # /admin
-supabase/
-├── schema.sql              # Full DB schema + RLS + triggers
-└── functions/
-    └── flw-webhook/
-        └── index.ts        # Edge Function for payment webhook
-```
+### Step 1 — Run the base schema
 
----
+1. Go to your [Supabase project](https://supabase.com/dashboard) → **SQL Editor**
+2. Copy and paste the entire contents of **`supabase/schema.sql`**
+3. Click **Run**
 
-## 🔗 Core User Flows
+### Step 2 — Run the analytics + COD migration
 
-### Customer Flow
-```
-TikTok video
-  → /p/:productId?ref=creator123
-  → /checkout/:productId
-  → Flutterwave payment popup (MTN / Airtel / Card)
-  → /confirm/:orderId
-```
+4. In the same SQL Editor, paste the contents of **`supabase/migrations/001_analytics_cod.sql`**
+5. Click **Run**
 
-### Vendor Flow
-```
-/vendor/login
-  → /vendor/dashboard  (real-time orders)
-  → /vendor/products   (manage listings)
-```
+### Step 3 — Enable Realtime
 
-### Creator Attribution
-Every product link supports `?ref=creator123`.  
-Creator is stored on each order and auto-generates a commission record when payment is confirmed.
+6. Go to **Database → Replication**
+7. Ensure `orders`, `payments`, and `analytics_events` tables are in the `supabase_realtime` publication (the SQL already does this, just verify)
 
 ---
 
 ## 💳 Flutterwave Setup
 
-1. Create account at [flutterwave.com](https://flutterwave.com)
-2. Get your **Public Key** → paste in `.env` as `VITE_FLW_PUBLIC_KEY`
-3. Set up webhook in FLW dashboard:
-   - URL: `https://<your-project>.supabase.co/functions/v1/flw-webhook`
-   - Events: `charge.completed`
-4. Copy your **Secret Hash** from FLW → set as Supabase secret:
-   ```bash
-   supabase secrets set FLW_SECRET_HASH=your_hash_here
-   ```
-5. Deploy the Edge Function:
-   ```bash
-   supabase functions deploy flw-webhook
-   ```
+### Test mode (development)
+Your `.env` already has a test key — it works as-is. Use Flutterwave's test credentials:
+- **Test card:** `4187427415564246` | CVV: `828` | Exp: `09/32`
+- **Test MTN mobile money:** Use any 10-digit number when prompted
 
----
+### Go live (production)
+1. Replace `VITE_FLW_PUBLIC_KEY` in `.env` with your live key from [Flutterwave Dashboard](https://dashboard.flutterwave.com)
+2. Replace `VITE_APP_URL` with your production domain
 
-## 🗄️ Supabase Setup
+### Webhook (payment server-side confirmation)
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Copy your **Project URL** and **Anon Key** → paste in `.env`
-3. Open **SQL Editor** → run `supabase/schema.sql` fully
-4. Enable **Realtime** for the `orders` table (already in schema)
-5. Set **Service Role Key** as Supabase secret for the Edge Function:
-   ```bash
-   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   supabase secrets set SUPABASE_URL=https://your-project.supabase.co
-   ```
+The Edge Function at `supabase/functions/flw-webhook/index.ts` handles server-side payment verification as a backup to client-side confirmation.
 
----
-
-## 🎨 Routes Reference
-
-| Route | Who | Description |
-|---|---|---|
-| `/p/:productId` | Customer | Product page |
-| `/p/:productId?ref=creator` | Customer | Product with creator attribution |
-| `/checkout/:productId` | Customer | Checkout form |
-| `/confirm/:orderId` | Customer | Order confirmation |
-| `/vendor/login` | Vendor | Login / Register |
-| `/vendor/dashboard` | Vendor | Real-time orders |
-| `/vendor/products` | Vendor | Manage products |
-| `/admin` | Admin | System overview |
-
----
-
-## 🔐 Security
-
-- **RLS** enforced on all tables — vendors only see their own orders/products
-- **Webhook signature** verified via `verif-hash` header
-- **Service role key** only used server-side in Edge Function (never exposed to client)
-- **No customer accounts** required — phone number is the identifier
-
----
-
-## 🌍 Deployment
-
-### Frontend → Vercel
+**Deploy the webhook:**
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Install Supabase CLI if needed
+npm install -g supabase
 
-# Deploy
-vercel --prod
-```
-Set all `VITE_*` env vars in your Vercel project settings.
+# Login and link project
+supabase login
+supabase link --project-ref rngvildhoutwlnfejclw
 
-### Backend → Supabase (already hosted)
-```bash
-# Deploy Edge Function
-supabase functions deploy flw-webhook --project-ref your-project-ref
+# Set required secrets
+supabase secrets set FLW_SECRET_HASH=your_flutterwave_secret_hash
+
+# Deploy the function
+supabase functions deploy flw-webhook
 ```
 
+**Get the webhook URL:**
+```
+https://rngvildhoutwlnfejclw.supabase.co/functions/v1/flw-webhook
+```
+
+**Configure in Flutterwave:**
+1. Go to Flutterwave Dashboard → Settings → Webhooks
+2. Add the URL above
+3. Set the Secret Hash (same value as `FLW_SECRET_HASH`)
+
 ---
 
-## 📱 Demo
+## 👥 User Flows
 
-Visit `http://localhost:5173/p/demo` to see the product page with a demo product (no Supabase needed).
+### Vendor Onboarding Flow
 
-Visit `http://localhost:5173/vendor/login` to test the vendor auth flow.
+```
+Admin sends signup link → /vendor/login
+    ↓
+Vendor clicks "Create Account"
+    ↓
+Fills: Store Name, Email, Password, Phone/WhatsApp
+    ↓
+Vendor dashboard loads → Go to Products
+    ↓
+Vendor adds products (title, price, stock, images)
+    ↓
+For each product: click "Generate Creator Link"
+    ↓
+Enter TikTok creator's handle (e.g. @content_creator)
+    ↓
+Shareable link generated:
+  https://yourdomain.com/p/{productId}?ref=content_creator
+    ↓
+Copy link → paste into TikTok video description / bio
+```
+
+### Customer Purchase Flow (Online)
+
+```
+Customer sees TikTok video → clicks link in description
+    ↓ (Analytics: link_click + page_view tracked)
+Product page loads — mobile optimised with Buy Now button
+    ↓
+Customer clicks Buy Now → Checkout page
+    ↓ (Analytics: checkout_start tracked)
+Customer fills: name (optional), phone, delivery zone, landmark
+    ↓
+Selects "Pay Online" → clicks "Pay Now"
+    ↓
+Flutterwave popup → MTN / Airtel / Card payment
+    ↓ (Analytics: order_placed + payment_success tracked)
+Order immediately confirmed in Supabase (status: paid)
+    ↓
+Vendor dashboard receives real-time alert 🎉
+    ↓
+Confirmation page shown to customer
+```
+
+### Customer Purchase Flow (Cash on Delivery)
+
+```
+Customer selects "Pay on Delivery" at checkout
+    ↓
+Clicks "Place Order (Pay on Delivery)"
+    ↓ (Analytics: order_placed tracked)
+Order created (status: pending_cod)
+    ↓
+Vendor sees order in dashboard with 🚚 COD badge
+    ↓
+Vendor calls customer to confirm → marks "Processing"
+    ↓
+Vendor delivers → marks "Dispatched"
+    ↓ (5% creator commission auto-recorded)
+```
+
+### Admin Analytics Flow
+
+```
+Admin → Logs in → Admin Panel (/admin)
+    ↓
+Clicks "Platform Analytics" button
+    ↓
+Funnel shows: Clicks → Views → Checkouts → Orders → Paid → Dispatched (across all stores)
+    ↓
+Vendor ranking: which stores perform best?
+    ↓
+Creator leaderboard: who drives the most referred traffic?
+```
 
 ---
 
-## 🧪 Test Credentials (Flutterwave Sandbox)
+## 📁 Project Structure
 
-| Method | Number | OTP |
-|---|---|---|
-| MTN Uganda | 256772000000 | 12345 |
-| Airtel Uganda | 256700000000 | 12345 |
+```
+src/
+├── lib/
+│   ├── supabase.js          # Supabase client
+│   ├── flutterwave.js       # Flutterwave payment helper
+│   └── analytics.js         # Funnel event tracker
+├── hooks/
+│   └── useRealtimeOrders.js # Realtime orders + vendor auth hooks
+├── pages/
+│   ├── ProductPage.jsx      # Customer product page (TikTok link destination)
+│   ├── CheckoutPage.jsx     # Checkout (online + COD)
+│   ├── ConfirmPage.jsx      # Order confirmation
+│   ├── VendorLogin.jsx      # Vendor signup/login
+│   ├── VendorDashboard.jsx  # Real-time orders dashboard
+│   ├── VendorProducts.jsx   # Product management + link generator
+│   ├── AdminAnalytics.jsx   # Platform-wide funnel analytics (admin-only)
+│   └── AdminPanel.jsx       # Platform admin view
+├── components/
+│   ├── Navbar.jsx
+│   └── UI.jsx               # Shared components
+supabase/
+├── schema.sql               # Base schema (run first)
+├── migrations/
+│   └── 001_analytics_cod.sql # COD + analytics migration (run second)
+└── functions/
+    └── flw-webhook/         # Flutterwave payment webhook
+        └── index.ts
+```
 
-Use test public key starting with `FLWPUBK_TEST-...`
+---
+
+## 🔑 Environment Variables
+
+File: `.env`
+
+```env
+# Supabase
+VITE_SUPABASE_URL=https://rngvildhoutwlnfejclw.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+
+# Flutterwave (use FLWPUBK_TEST-... for sandbox, FLWPUBK-... for live)
+VITE_FLW_PUBLIC_KEY=FLWPUBK_TEST-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-X
+
+# Your app URL (used for payment branding)
+VITE_APP_URL=http://localhost:5173
+```
+
+---
+
+## 🗃️ Database Tables
+
+| Table | Purpose |
+|---|---|
+| `users` | Auth mirror (auto-created on signup) |
+| `vendors` | Vendor store profiles (name, slug, phone, WhatsApp) |
+| `products` | Product catalogue (title, price, images, stock) |
+| `orders` | Orders with status flow + payment method (online/cod) |
+| `payments` | Flutterwave payment records |
+| `commissions` | 5% creator commission auto-tracked on paid/dispatched |
+| `analytics_events` | Funnel events (link_click, page_view, checkout_start, order_placed, payment_success, dispatched) |
+
+### Order Status Flow
+
+```
+pending_payment → paid (online, confirmed by Flutterwave)
+pending_cod     → processing → dispatched (COD flow)
+any             → cancelled
+any             → failed (payment failed)
+```
+
+---
+
+## 🚢 Deploy to Vercel
+
+```bash
+npm run build
+# Then push to GitHub and connect to Vercel
+# Add all VITE_ env vars in Vercel project settings
+```
+
+The `vercel.json` file already handles SPA routing.
+
+---
+
+## 📞 Support
+
+- Supabase issues → check RLS policies in `schema.sql`
+- Payment issues → verify `VITE_FLW_PUBLIC_KEY` in `.env`
+- Realtime not working → check Supabase Replication settings
+http://localhost:5173/admin/login

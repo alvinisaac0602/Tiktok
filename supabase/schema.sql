@@ -18,18 +18,47 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Auto-create user row on signup
+-- Auto-create user and vendor row on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  store_slug_val TEXT;
 BEGIN
+  -- Insert into public.users
   INSERT INTO public.users (id, email, name, role)
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'name',
+    COALESCE(NEW.raw_user_meta_data->>'store_name', NEW.raw_user_meta_data->>'name'),
     COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE
+  SET name = EXCLUDED.name,
+      role = EXCLUDED.role;
+
+  -- If vendor, auto-create vendor profile
+  IF COALESCE(NEW.raw_user_meta_data->>'role', 'customer') = 'vendor' THEN
+    store_slug_val := lower(regexp_replace(COALESCE(NEW.raw_user_meta_data->>'store_name', 'My Store'), '[^a-zA-Z0-9]+', '-', 'g'));
+    store_slug_val := trim(both '-' from store_slug_val);
+    
+    IF EXISTS (SELECT 1 FROM public.vendors WHERE store_slug = store_slug_val) THEN
+      store_slug_val := store_slug_val || '-' || substr(md5(random()::text), 1, 4);
+    END IF;
+
+    BEGIN
+      INSERT INTO public.vendors (user_id, store_name, store_slug, store_phone, store_whatsapp)
+      VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'store_name', 'My Store'),
+        store_slug_val,
+        NEW.raw_user_meta_data->>'store_phone',
+        COALESCE(NEW.raw_user_meta_data->>'store_whatsapp', NEW.raw_user_meta_data->>'store_whatsapp', NEW.raw_user_meta_data->>'store_phone')
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Auto-creation of vendor profile failed: %', SQLERRM;
+    END;
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -187,6 +216,8 @@ ALTER TABLE public.commissions ENABLE ROW LEVEL SECURITY;
 -- USERS
 CREATE POLICY "users_select_own" ON public.users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "users_update_own" ON public.users FOR UPDATE USING (auth.uid() = id);
+-- Allow users to be created when their auth UID matches the row id (signup flow)
+CREATE POLICY "users_insert_own" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- VENDORS — vendors see own record; public can read (for product pages)
 CREATE POLICY "vendors_select_own" ON public.vendors FOR SELECT USING (auth.uid() = user_id);
@@ -196,8 +227,24 @@ CREATE POLICY "vendors_update_own" ON public.vendors FOR UPDATE USING (auth.uid(
 -- PRODUCTS — public read for active products; vendors manage own
 CREATE POLICY "products_public_read" ON public.products
   FOR SELECT USING (is_active = TRUE);
-CREATE POLICY "products_vendor_all" ON public.products
-  FOR ALL USING (
+-- Allow vendors to manage their own products (clear separate policies)
+CREATE POLICY "products_vendor_select" ON public.products
+  FOR SELECT USING (
+    vendor_id IN (SELECT id FROM public.vendors WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "products_vendor_insert" ON public.products
+  FOR INSERT WITH CHECK (
+    vendor_id IN (SELECT id FROM public.vendors WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "products_vendor_update" ON public.products
+  FOR UPDATE USING (
+    vendor_id IN (SELECT id FROM public.vendors WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "products_vendor_delete" ON public.products
+  FOR DELETE USING (
     vendor_id IN (SELECT id FROM public.vendors WHERE user_id = auth.uid())
   );
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, LayoutDashboard, LogOut, Menu, X } from 'lucide-react'
+import { ShoppingBag, LayoutDashboard, LogOut, Menu, X, BarChart2 } from 'lucide-react'
 import { useState } from 'react'
 import { signOut } from '../lib/supabase'
 
@@ -27,30 +27,25 @@ export function Navbar({ vendor, user }) {
         <div className="hidden md:flex items-center gap-4">
           {isVendor && vendor && (
             <>
-              <Link
-                to="/vendor/dashboard"
-                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors"
-              >
-                <LayoutDashboard size={16} />
-                Dashboard
+              <Link to="/vendor/dashboard"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">
+                <LayoutDashboard size={16} /> Dashboard
               </Link>
-              <Link
-                to="/vendor/products"
-                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors"
-              >
-                <ShoppingBag size={16} />
-                Products
+              <Link to="/vendor/products"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">
+                <ShoppingBag size={16} /> Products
+              </Link>
+              <Link to="/vendor/analytics"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">
+                <BarChart2 size={16} /> Analytics
               </Link>
               <div className="flex items-center gap-2 pl-4 border-l border-slate-200">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-500 to-accent-400 flex items-center justify-center text-white text-xs font-bold">
                   {vendor.store_name?.[0]?.toUpperCase() || 'V'}
                 </div>
                 <span className="text-sm font-semibold text-slate-700">{vendor.store_name}</span>
-                <button
-                  onClick={handleSignOut}
-                  className="ml-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  title="Sign out"
-                >
+                <button onClick={handleSignOut}
+                  className="ml-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Sign out">
                   <LogOut size={15} />
                 </button>
               </div>
@@ -80,17 +75,20 @@ export function Navbar({ vendor, user }) {
         <div className="md:hidden bg-white border-t border-slate-100 px-4 py-3 space-y-2 animate-fade-in">
           {isVendor && vendor ? (
             <>
-              <Link
-                to="/vendor/dashboard"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700"
-              >
+              <Link to="/vendor/dashboard" onClick={() => setOpen(false)}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700">
                 <LayoutDashboard size={16} /> Dashboard
               </Link>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 py-2 text-sm font-medium text-red-500"
-              >
+              <Link to="/vendor/products" onClick={() => setOpen(false)}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700">
+                <ShoppingBag size={16} /> Products
+              </Link>
+              <Link to="/vendor/analytics" onClick={() => setOpen(false)}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700">
+                <BarChart2 size={16} /> Analytics
+              </Link>
+              <button onClick={handleSignOut}
+                className="flex items-center gap-2 py-2 text-sm font-medium text-red-500">
                 <LogOut size={16} /> Sign Out
               </button>
             </>

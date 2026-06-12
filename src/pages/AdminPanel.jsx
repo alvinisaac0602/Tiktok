@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { StatusBadge, Spinner, EmptyState, StatCard, PageLoader } from '../components/UI'
 import { Navbar } from '../components/Navbar'
-import toast, { Toaster } from 'react-hot-toast'
-import { Search, RefreshCw, Users, Store, ShoppingBag, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { Search, RefreshCw, Users, Store, ShoppingBag, TrendingUp, AlertTriangle, Trash2, BarChart2, Copy, X } from 'lucide-react'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
@@ -14,27 +14,60 @@ export default function AdminPanel() {
   const [data, setData] = useState({ orders: [], vendors: [], products: [] })
   const [search, setSearch] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteLink, setInviteLink] = useState('')
 
   useEffect(() => {
     checkAdmin()
   }, [])
 
   const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { navigate('/vendor/login'); return }
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { navigate('/vendor/login'); return }
 
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    if (profile?.role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/vendor/dashboard')
-      return
+      // If user doesn't exist in public.users, create an admin record
+      if (error?.code === 'PGRST116') {
+        const { error: insertError } = await supabase.from('users').insert({
+          id: user.id,
+          email: user.email,
+          role: 'admin'
+        })
+        if (insertError) {
+          console.error('Failed to create admin profile:', insertError)
+          toast.error('Failed to create admin profile: ' + insertError.message)
+          navigate('/vendor/login')
+          return
+        }
+        toast.success('Admin profile created')
+        fetchAll()
+        return
+      }
+
+      if (error) {
+        console.error('Error checking admin:', error)
+        toast.error('Error: ' + error.message)
+        return
+      }
+
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Admin access required')
+        navigate('/vendor/login')
+        return
+      }
+      
+      fetchAll()
+    } catch (err) {
+      console.error('checkAdmin error:', err)
+      toast.error(err.message)
     }
-    fetchAll()
   }
 
   const fetchAll = async () => {
@@ -66,6 +99,41 @@ export default function AdminPanel() {
     fetchAll()
   }
 
+  const generateVendorInvite = async () => {
+    if (!inviteEmail.trim() || !/\S+@\S+\.\S+/.test(inviteEmail)) {
+      toast.error('Valid email is required')
+      return
+    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const token = Math.random().toString(36).substring(2, 8).toUpperCase()
+      const { data, error } = await supabase.from('vendor_invites').insert([
+        {
+          email: inviteEmail,
+          token,
+          created_by_admin_id: user.id,
+        }
+      ]).select()
+      if (error) throw error
+      const appUrl = import.meta.env.VITE_APP_URL || 'http://localhost:5173'
+      const link = `${appUrl}/vendor/login?invite=${token}`
+      setInviteLink(link)
+      toast.success('Invite generated!')
+    } catch (err) {
+      toast.error(err.message || 'Failed to generate invite')
+    }
+  }
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard')
+  }
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(inviteLink)
+    toast.success('Link copied to clipboard!')
+  }
+
   if (loading) return <PageLoader />
 
   const tabs = [
@@ -80,7 +148,6 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-slate-50 page-enter">
-      <Toaster position="top-right" />
       <Navbar />
 
       {/* Header */}
@@ -90,14 +157,27 @@ export default function AdminPanel() {
             <p className="text-slate-400 text-sm">Admin Panel</p>
             <h1 className="font-display font-bold text-2xl">System Overview</h1>
           </div>
-          <button
-            onClick={fetchAll}
-            disabled={refreshing}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all"
-          >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setShowInviteModal(true); setInviteEmail(''); setInviteLink(''); }}
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+              <Users size={14} />
+              Invite Vendor
+            </button>
+            <Link to="/admin/analytics"
+              className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+              <BarChart2 size={14} />
+              Platform Analytics
+            </Link>
+            <button
+              onClick={fetchAll}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -245,6 +325,62 @@ export default function AdminPanel() {
           )}
         </div>
       </div>
+
+      {/* Invite Vendor Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display font-bold text-lg text-slate-900">Invite Vendor</h2>
+              <button onClick={() => setShowInviteModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+
+            {!inviteLink ? (
+              <>
+                <p className="text-sm text-slate-600">Generate a signup link for a new vendor.</p>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="vendor@example.com"
+                  className="input"
+                />
+                <button
+                  onClick={generateVendorInvite}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all"
+                >
+                  Generate Link
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-slate-600">Share this link with the vendor:</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={inviteLink}
+                    readOnly
+                    className="flex-1 bg-transparent text-xs text-slate-600 outline-none truncate"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className="text-emerald-600 hover:text-emerald-700 p-1.5 rounded-lg hover:bg-emerald-50 transition-all"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400 text-center">Link is valid for 30 days</p>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all"
+                >
+                  Done
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

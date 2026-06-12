@@ -5,15 +5,18 @@ import React from 'react'
  */
 export function StatusBadge({ status }) {
   const map = {
-    paid:            { label: '✅ Paid',       cls: 'badge-paid' },
-    pending_payment: { label: '⏳ Pending',    cls: 'badge-pending' },
-    processing:      { label: '🔄 Processing', cls: 'badge-processing' },
-    failed:          { label: '❌ Failed',     cls: 'badge-failed' },
+    paid:            { label: '✅ Paid',           cls: 'badge-paid' },
+    pending_payment: { label: '⏳ Awaiting Payment', cls: 'badge-pending' },
+    pending_cod:     { label: '🚚 Cash on Delivery', cls: 'badge bg-amber-100 text-amber-700' },
+    processing:      { label: '🔄 Processing',     cls: 'badge-processing' },
+    dispatched:      { label: '📦 Dispatched',     cls: 'badge bg-indigo-100 text-indigo-700' },
+    cancelled:       { label: '❌ Cancelled',      cls: 'badge bg-slate-100 text-slate-500' },
+    failed:          { label: '💔 Failed',         cls: 'badge-failed' },
   }
   const item = map[status] || { label: status, cls: 'badge bg-slate-100 text-slate-600' }
-
   return <span className={item.cls}>{item.label}</span>
 }
+
 
 /**
  * Spinner loader
@@ -76,14 +79,14 @@ export function StatCard({ label, value, icon, color = 'blue', sub }) {
     orange: 'from-orange-500 to-orange-400',
   }
   return (
-    <div className="card-hover flex items-start gap-4">
-      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colors[color]} flex items-center justify-center text-xl shadow-sm flex-shrink-0`}>
+    <div className="card-hover flex items-start gap-3 sm:gap-4">
+      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br ${colors[color]} flex items-center justify-center text-lg sm:text-xl shadow-sm flex-shrink-0`}>
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-        <p className="text-2xl font-bold text-slate-900 mt-0.5 truncate">{value}</p>
-        {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className="text-lg sm:text-2xl font-bold text-slate-900 mt-0.5 truncate">{value}</p>
+        {sub && <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 hidden sm:block">{sub}</p>}
       </div>
     </div>
   )
