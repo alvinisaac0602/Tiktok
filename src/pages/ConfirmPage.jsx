@@ -32,8 +32,18 @@ export default function ConfirmPage() {
         return
       }
       const { data } = await supabase
-        .from('orders').select('*, products(title, images), vendors(store_name, store_phone, store_whatsapp, store_slug)')
-        .eq('id', orderId).single()
+        .from('orders')
+        .select(`
+          *,
+          products(
+            title,
+            images,
+            vendors(store_name, store_phone, store_whatsapp, store_slug)
+          ),
+          vendors(store_name, store_phone, store_whatsapp, store_slug)
+        `)
+        .eq('id', orderId)
+        .single()
       setOrder(data)
       setLoading(false)
     }
@@ -54,7 +64,7 @@ export default function ConfirmPage() {
   const isPaid = order?.status === 'paid' || isSuccess
   const isCodOrder = order?.payment_method === 'cod' || isCOD
 
-  const vendorWhatsapp = order?.vendors?.store_whatsapp || order?.vendors?.store_phone
+  const vendorWhatsapp = order?.vendors?.store_whatsapp || order?.vendors?.store_phone || order?.products?.vendors?.store_whatsapp || order?.products?.vendors?.store_phone
   const waLink = vendorWhatsapp
     ? `https://wa.me/${vendorWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi! I placed an order for ${order?.products?.title || 'your product'}. Order ref: ${orderId?.slice(0,8)}`)}`
     : null
@@ -194,7 +204,7 @@ export default function ConfirmPage() {
             className="btn-secondary w-full">
             <Share2 size={16} /> Share This Product
           </button>
-          <Link to={`/store/${order?.vendors?.store_slug || 'demo-store'}`} className="btn-primary w-full">
+          <Link to={`/store/${order?.vendors?.store_slug || order?.products?.vendors?.store_slug || 'demo-store'}`} className="btn-primary w-full">
             Shop More <ArrowRight size={16} />
           </Link>
         </div>
