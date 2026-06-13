@@ -11,7 +11,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, X,
   Image, DollarSign, Package, Tag, Save, Link2,
   Copy, Share2, AtSign, ChevronDown, ChevronUp,
-  Upload, ImagePlus, GripVertical
+  Upload, ImagePlus, GripVertical, Sparkles, ArrowRight
 } from 'lucide-react'
 
 const BUCKET = 'product-images'
@@ -224,19 +224,23 @@ function ProductModal({ product, vendorId, onClose, onSaved }) {
           <div>
             <label className="label"><Tag size={13} className="inline mr-1" />Product Title *</label>
             <input type="text" value={form.title} onChange={set('title')} placeholder="e.g. Premium Wireless Earbuds" className="input" />
+            <p className="text-[10px] text-slate-400 mt-1">Provide a clear, brief title that customers can identify instantly.</p>
           </div>
           <div>
             <label className="label">Description</label>
             <textarea value={form.description} onChange={set('description')} placeholder="Describe your product…" rows={3} className="input resize-none" />
+            <p className="text-[10px] text-slate-400 mt-1">Outline specifications, color options, dimensions, or package contents.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label"><DollarSign size={13} className="inline mr-1" />Price (UGX) *</label>
               <input type="number" value={form.price} onChange={set('price')} placeholder="85000" min="0" className="input" />
+              <p className="text-[10px] text-slate-400 mt-1">Retail price. Excludes shipping.</p>
             </div>
             <div>
               <label className="label"><Package size={13} className="inline mr-1" />Stock</label>
               <input type="number" value={form.stock} onChange={set('stock')} placeholder="50" min="0" className="input" />
+              <p className="text-[10px] text-slate-400 mt-1">Available quantity. Auto-decrements.</p>
             </div>
           </div>
 
@@ -406,7 +410,24 @@ export default function VendorProducts() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-3 mt-4">
+          <div className="space-y-3 mt-4">
+            {/* Quick Next Steps Guide */}
+            <div className="card bg-brand-50/40 border border-brand-100/60 p-4 space-y-2">
+              <h3 className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-brand-600 animate-pulse" />
+                <span>Next Steps: Share & Drive Orders</span>
+              </h3>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Your products are live on your web storefront! Follow these steps to start generating sales:
+              </p>
+              <ul className="list-disc list-inside text-[11px] text-slate-500 space-y-1 pl-1">
+                <li>Click <strong className="text-brand-700">Generate Creator Link</strong> under any product below.</li>
+                <li>Copy the short link and add it to your TikTok bio or video captions.</li>
+                <li>If sharing with TikTok creators, type their handle to track their commission automatically.</li>
+              </ul>
+            </div>
+
+            <div className="grid gap-3">
             {products.map(product => (
               <div key={product.id} className={`card transition-all ${!product.is_active ? 'opacity-60' : ''}`}>
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-col sm:flex-row">
@@ -449,6 +470,7 @@ export default function VendorProducts() {
                 <LinkGenerator product={product} storeSlug={vendor?.store_slug} />
               </div>
             ))}
+          </div>
           </div>
         )}
       </div>

@@ -11,7 +11,7 @@ import {
 import { Navbar } from '../components/Navbar'
 import toast from 'react-hot-toast'
 import {
-  Search, MapPin, Phone, Package, ChevronDown, Copy, Banknote, CreditCard, Sparkles, Clock
+  Search, MapPin, Phone, Package, ChevronDown, Copy, Banknote, CreditCard, Sparkles, Clock, ArrowRight, X
 } from 'lucide-react'
 
 function OrderRow({ order, expanded, onToggle, onStatusChange }) {
@@ -245,6 +245,18 @@ export default function VendorDashboard() {
   const [activeTab, setActiveTab] = useState('todo')
   const [newAlertVisible, setNewAlertVisible] = useState(null)
 
+  // Onboarding Checklist States
+  const [prodCount, setProdCount] = useState(0)
+  const [guideDismissed, setGuideDismissed] = useState(() => localStorage.getItem('tikshop_guide_dismissed') === 'true')
+  const [dummy, setDummy] = useState(0)
+
+  useEffect(() => {
+    if (vendor?.id) {
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor.id)
+        .then(({ count }) => setProdCount(count || 0))
+    }
+  }, [vendor?.id])
+
   useEffect(() => { if (!authLoading && !user) navigate('/vendor/login') }, [authLoading, user])
 
   useEffect(() => {
@@ -332,7 +344,15 @@ export default function VendorDashboard() {
                 : '🎉 Excellent! All orders are packed and shipped.'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {guideDismissed && (
+              <button 
+                onClick={() => { setGuideDismissed(false); localStorage.removeItem('tikshop_guide_dismissed'); }}
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold py-2 px-3.5 rounded-2xl transition-all"
+              >
+                💡 Show Guide
+              </button>
+            )}
             <Link to="/vendor/products" className="btn-primary bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-bold shadow-none py-2.5 px-4 rounded-2xl transition-all">
               📦 Products
             </Link>
@@ -350,6 +370,87 @@ export default function VendorDashboard() {
           <StatCard label="Orders To Do" value={todoCount} icon="📦" color="orange" sub="Need packing or shipping" />
           <StatCard label="All-time Orders" value={orders.length} icon="✨" color="blue" sub="Total orders received" />
         </div>
+
+        {/* Quick Start Guide */}
+        {!guideDismissed && (
+          <div className="card bg-gradient-to-br from-white to-slate-50 border-brand-200/80 shadow-md relative overflow-hidden p-5 sm:p-6 space-y-4">
+            <button 
+              onClick={() => { setGuideDismissed(true); localStorage.setItem('tikshop_guide_dismissed', 'true'); }} 
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+            
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+                <Sparkles size={16} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Vendor Quick Start Guide</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Follow these steps to set up your store and get orders.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              {[
+                {
+                  title: 'Upload Your First Product',
+                  desc: 'Add products to your catalog so customers can start browsing.',
+                  completed: prodCount > 0,
+                  action: <Link to="/vendor/products" className="text-xs font-bold text-brand-600 hover:text-brand-700 underline flex items-center gap-0.5 mt-1.5">Go to Products <ArrowRight size={12} /></Link>
+                },
+                {
+                  title: 'Copy & Share Store Link',
+                  desc: 'Put your storefront link in your TikTok bio or share it on WhatsApp.',
+                  completed: localStorage.getItem('copied_store_link') === 'true',
+                  action: (
+                    <button onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/store/${vendor?.store_slug}`)
+                      localStorage.setItem('copied_store_link', 'true')
+                      toast.success('Store link copied!')
+                      setDummy(d => d + 1)
+                    }} className="text-xs font-bold text-brand-600 hover:text-brand-700 underline mt-1.5 block">
+                      Copy Store Link
+                    </button>
+                  )
+                },
+                {
+                  title: 'Fulfill Your First Order',
+                  desc: 'Check the "To Do" tab below, pack the items, and send them to the driver.',
+                  completed: orders.length > 0,
+                  action: <span className="text-[11px] text-slate-400 font-medium mt-1.5 block">{orders.length > 0 ? '🎉 First order received!' : 'Waiting for first order…'}</span>
+                }
+              ].map((step, idx) => (
+                <div key={idx} className={`p-4 rounded-2xl border transition-all ${
+                  step.completed 
+                    ? 'bg-emerald-50/30 border-emerald-100/60' 
+                    : 'bg-white border-slate-100 shadow-sm'
+                }`}>
+                  <div className="flex items-start gap-2.5">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black ${
+                      step.completed 
+                        ? 'bg-emerald-500 text-white' 
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {step.completed ? '✓' : idx + 1}
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className={`font-bold text-xs leading-tight ${step.completed ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                        {step.title}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">
+                        {step.desc}
+                      </p>
+                      <div className="pt-1">
+                        {step.action}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tab Selectors */}
         <div className="flex bg-slate-200/50 p-1.5 rounded-2xl border border-slate-200/80 gap-1 overflow-x-auto no-scrollbar">
