@@ -42,11 +42,26 @@ export default {
         'slide-up':   'slideUp 0.4s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4,0,0.6,1) infinite',
         'bounce-sm':  'bounceSm 1s infinite',
+        'swing':      'swing 1s ease-in-out infinite',
+        'bounce-in':  'bounceIn 0.5s cubic-bezier(0.215, 0.610, 0.355, 1) both',
       },
       keyframes: {
         fadeIn:  { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
         slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
         bounceSm:{ '0%,100%': { transform: 'translateY(-4px)' }, '50%': { transform: 'translateY(0)' } },
+        swing: {
+          '0%, 100%': { transform: 'rotate(0)' },
+          '20%': { transform: 'rotate(15deg)' },
+          '40%': { transform: 'rotate(-10deg)' },
+          '60%': { transform: 'rotate(5deg)' },
+          '80%': { transform: 'rotate(-5deg)' },
+        },
+        bounceIn: {
+          '0%': { opacity: '0', transform: 'scale(0.3)' },
+          '50%': { opacity: '0.9', transform: 'scale(1.1)' },
+          '80%': { opacity: '1', transform: 'scale(0.89)' },
+          '100%': { opacity: '1', transform: 'scale(1)' }
+        }
       },
       boxShadow: {
         'card': '0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07)',

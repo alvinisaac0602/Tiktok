@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { useRealtimeOrders, useVendorAuth } from '../hooks/useRealtimeOrders'
@@ -236,14 +236,30 @@ function OrderRow({ order, expanded, onToggle, onStatusChange }) {
   )
 }
 
+// Standalone utility to compute tab key for order
+const getTabForOrder = (order) => {
+  const status = order.status
+  const pm = order.payment_method
+  if (status === 'cancelled' || status === 'failed' || status === 'pending_payment') {
+    return 'cancelled'
+  }
+  if (status === 'paid' && pm === 'cod') {
+    return 'completed'
+  }
+  if (status === 'dispatched' && pm === 'online') {
+    return 'completed'
+  }
+  return 'todo'
+}
+
 export default function VendorDashboard() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { vendor, user, loading: authLoading } = useVendorAuth()
-  const { orders, loading: ordersLoading, newOrderAlert } = useRealtimeOrders(vendor?.id)
+  const { orders, loading: ordersLoading } = useRealtimeOrders(vendor?.id)
   const [expandedId, setExpandedId] = useState(null)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('todo')
-  const [newAlertVisible, setNewAlertVisible] = useState(null)
 
   // Onboarding Checklist States
   const [prodCount, setProdCount] = useState(0)
@@ -259,13 +275,22 @@ export default function VendorDashboard() {
 
   useEffect(() => { if (!authLoading && !user) navigate('/vendor/login') }, [authLoading, user])
 
+  // Expand order if navigated from a notification
   useEffect(() => {
-    if (newOrderAlert) {
-      setNewAlertVisible(newOrderAlert)
-      const t = setTimeout(() => setNewAlertVisible(null), 6000)
-      return () => clearTimeout(t)
+    if (location.state?.expandOrderId && orders.length > 0) {
+      const orderId = location.state.expandOrderId
+      setExpandedId(orderId)
+      
+      // Switch tab to the correct tab for the expanded order
+      const targetOrder = orders.find(o => o.id === orderId)
+      if (targetOrder) {
+        setActiveTab(getTabForOrder(targetOrder))
+      }
+      
+      // Clear the navigation state so it doesn't open on re-render/refresh
+      window.history.replaceState({}, document.title)
     }
-  }, [newOrderAlert])
+  }, [location.state, orders])
 
   const handleStatusChange = async (orderId, newStatus) => {
     trackCustomEvent('vendor_order_status_change', { order_id: orderId, new_status: newStatus })
@@ -289,20 +314,6 @@ export default function VendorDashboard() {
     )
   }
 
-  const getTabForOrder = (order) => {
-    const status = order.status
-    const pm = order.payment_method
-    if (status === 'cancelled' || status === 'failed' || status === 'pending_payment') {
-      return 'cancelled'
-    }
-    if (status === 'paid' && pm === 'cod') {
-      return 'completed'
-    }
-    if (status === 'dispatched' && pm === 'online') {
-      return 'completed'
-    }
-    return 'todo'
-  }
 
   const filtered = orders.filter(o => {
     const matchSearch = !search
@@ -321,7 +332,6 @@ export default function VendorDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 page-enter">
-      <NewOrderToast order={newAlertVisible} onDismiss={() => setNewAlertVisible(null)} />
       <Navbar vendor={vendor} user={user} />
 
       {/* Welcoming Header with store name */}
