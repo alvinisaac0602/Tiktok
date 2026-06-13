@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import toast from 'react-hot-toast'
 import {
   ShoppingBag, Zap, TrendingUp, BarChart2, ArrowRight,
   Check, ChevronDown, ChevronUp, Smartphone, Play,
   CheckCircle2, HelpCircle, Lock, Shield, Phone, MapPin, CreditCard, Banknote,
-  Menu, X
+  Menu, X, Mail, MessageCircle
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -23,6 +25,35 @@ export default function LandingPage() {
   
   // Pricing tab state ('standard' or 'enterprise')
   const [pricingTab, setPricingTab] = useState('standard')
+
+  // Landing Page Feedback states
+  const [lName, setLName] = useState('')
+  const [lEmail, setLEmail] = useState('')
+  const [lMsg, setLMsg] = useState('')
+  const [landingFbSubmitting, setLandingFbSubmitting] = useState(false)
+  const [landingFeedbackSubmitted, setLandingFeedbackSubmitted] = useState(false)
+
+  const handleLandingFeedbackSubmit = async (e) => {
+    e.preventDefault()
+    if (!lMsg.trim()) return
+    setLandingFbSubmitting(true)
+    try {
+      const { error } = await supabase.from('feedback').insert({
+        source: 'landing_page',
+        name: lName.trim() || null,
+        email: lEmail.trim() || null,
+        message: lMsg.trim(),
+      })
+      if (error) throw error
+      setLandingFeedbackSubmitted(true)
+      toast.success('Thank you for your feedback!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to submit feedback: ' + err.message)
+    } finally {
+      setLandingFbSubmitting(false)
+    }
+  }
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -714,6 +745,113 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Contact & Feedback Section */}
+        <section id="contact-feedback" className="py-20 px-4 bg-slate-50 border-t border-slate-100">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              {/* Contact Info (Left) */}
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <span className="text-brand-600 text-xs font-bold uppercase tracking-widest text-[11px]">Get In Touch</span>
+                  <h2 className="font-display font-extrabold text-3xl text-slate-900 leading-tight">
+                    Contact & Support
+                  </h2>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Have questions about setting up your TikShop, pricing, or need custom enterprise integrations? Reach out to us directly.
+                  </p>
+                </div>
+
+                <div className="space-y-5 pt-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 flex-shrink-0">
+                      <Phone size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">Phone Support</h4>
+                      <p className="text-xs text-slate-500 mt-1">Call or message us anytime:</p>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-1">
+                        <a href="tel:0789186476" className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors">0789186476</a>
+                        <span className="hidden sm:inline text-slate-300">|</span>
+                        <a href="tel:0741319191" className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors">0741319191</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 flex-shrink-0">
+                      <Mail size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">Email Support</h4>
+                      <p className="text-xs text-slate-500 mt-1">Direct inquiries & support:</p>
+                      <a href="mailto:kiizaisaacalvin256@gmail.com" className="text-sm font-semibold text-brand-600 hover:text-brand-700 block mt-0.5 transition-colors">
+                        kiizaisaacalvin256@gmail.com
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feedback Form (Right) */}
+              <div className="card bg-white shadow-card p-6 sm:p-8 space-y-4">
+                <div className="space-y-1">
+                  <h3 className="font-bold text-lg text-slate-900">Share Your Feedback</h3>
+                  <p className="text-xs text-slate-400">Help us build the best social commerce system in Uganda.</p>
+                </div>
+
+                {landingFeedbackSubmitted ? (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl p-4 text-center">
+                    🎉 Thank you for your feedback! We appreciate your insights.
+                  </div>
+                ) : (
+                  <form onSubmit={handleLandingFeedbackSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="label">Name <span className="text-slate-400 font-normal">(optional)</span></label>
+                        <input 
+                          type="text" 
+                          value={lName}
+                          onChange={e => setLName(e.target.value)}
+                          placeholder="e.g. Isaac" 
+                          className="input bg-slate-50/50" 
+                        />
+                      </div>
+                      <div>
+                        <label className="label">Email <span className="text-slate-400 font-normal">(optional)</span></label>
+                        <input 
+                          type="email" 
+                          value={lEmail}
+                          onChange={e => setLEmail(e.target.value)}
+                          placeholder="e.g. isaac@gmail.com" 
+                          className="input bg-slate-50/50" 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Message <span className="text-red-500">*</span></label>
+                      <textarea 
+                        value={lMsg}
+                        onChange={e => setLMsg(e.target.value)}
+                        placeholder="What do you think of TikShop? Any features you'd like to see?" 
+                        rows={4}
+                        className="input bg-slate-50/50 resize-none"
+                        required
+                      />
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={landingFbSubmitting}
+                      className="w-full btn-primary py-3 rounded-xl font-bold justify-center"
+                    >
+                      {landingFbSubmitting ? 'Submitting...' : 'Send Feedback'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
       {/* Footer */}
@@ -748,8 +886,11 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Security</h4>
-            <div className="space-y-2 text-xs">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Contact & Security</h4>
+            <div className="space-y-2.5 text-xs">
+              <p className="text-slate-400">Phone: <a href="tel:0789186476" className="hover:text-white transition-colors">0789186476</a> / <a href="tel:0741319191" className="hover:text-white transition-colors">0741319191</a></p>
+              <p className="text-slate-400">Email: <a href="mailto:kiizaisaacalvin256@gmail.com" className="hover:text-white transition-colors break-all">kiizaisaacalvin256@gmail.com</a></p>
+              <hr className="border-slate-800 my-2" />
               <p className="flex items-center gap-1.5 text-slate-500">
                 <Lock size={12} /> SSL Secured
               </p>

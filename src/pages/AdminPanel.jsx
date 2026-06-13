@@ -5,13 +5,13 @@ import { formatUGX } from '../lib/flutterwave'
 import { StatusBadge, Spinner, EmptyState, StatCard, PageLoader } from '../components/UI'
 import { Navbar } from '../components/Navbar'
 import toast from 'react-hot-toast'
-import { Search, RefreshCw, Users, Store, ShoppingBag, TrendingUp, AlertTriangle, Trash2, BarChart2, Copy, X } from 'lucide-react'
+import { Search, RefreshCw, Users, Store, ShoppingBag, TrendingUp, AlertTriangle, Trash2, BarChart2, Copy, X, MessageCircle } from 'lucide-react'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('orders') // 'orders' | 'vendors' | 'products'
-  const [data, setData] = useState({ orders: [], vendors: [], products: [] })
+  const [tab, setTab] = useState('orders') // 'orders' | 'vendors' | 'products' | 'feedback'
+  const [data, setData] = useState({ orders: [], vendors: [], products: [], feedback: [] })
   const [search, setSearch] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -72,15 +72,17 @@ export default function AdminPanel() {
 
   const fetchAll = async () => {
     setRefreshing(true)
-    const [ordersRes, vendorsRes, productsRes] = await Promise.all([
+    const [ordersRes, vendorsRes, productsRes, feedbackRes] = await Promise.all([
       supabase.from('orders').select('*, products(title), vendors(store_name)').order('created_at', { ascending: false }).limit(200),
       supabase.from('vendors').select('*, users(email)').order('created_at', { ascending: false }),
       supabase.from('products').select('*, vendors(store_name)').order('created_at', { ascending: false }),
+      supabase.from('feedback').select('*').order('created_at', { ascending: false }),
     ])
     setData({
       orders: ordersRes.data || [],
       vendors: vendorsRes.data || [],
       products: productsRes.data || [],
+      feedback: feedbackRes.data || [],
     })
     setLoading(false)
     setRefreshing(false)
@@ -140,6 +142,7 @@ export default function AdminPanel() {
     { key: 'orders',   label: 'Orders',   icon: <ShoppingBag size={15} />, count: data.orders.length },
     { key: 'vendors',  label: 'Vendors',  icon: <Store size={15} />,       count: data.vendors.length },
     { key: 'products', label: 'Products', icon: <TrendingUp size={15} />,  count: data.products.length },
+    { key: 'feedback', label: 'Feedback', icon: <MessageCircle size={15} />, count: data.feedback.length },
   ]
 
   const totalRevenue = data.orders
@@ -321,6 +324,46 @@ export default function AdminPanel() {
                     </button>
                   </div>
                 ))}
+            </div>
+          )}
+
+          {/* Feedback table */}
+          {tab === 'feedback' && (
+            <div className="space-y-3">
+              {data.feedback
+                .filter((f) =>
+                  !search ||
+                  f.name?.toLowerCase().includes(search.toLowerCase()) ||
+                  f.email?.toLowerCase().includes(search.toLowerCase()) ||
+                  f.message?.toLowerCase().includes(search.toLowerCase()) ||
+                  f.store_slug?.toLowerCase().includes(search.toLowerCase())
+                )
+                .map((f) => (
+                  <div key={f.id} className="p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                          f.source === 'landing_page' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {f.source === 'landing_page' ? 'Landing Page' : `Store: ${f.store_slug}`}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(f.created_at).toLocaleString('en-UG')}
+                      </span>
+                    </div>
+                    <p className="text-slate-800 font-medium text-sm leading-relaxed">{f.message}</p>
+                    <div className="flex items-center gap-4 text-xs text-slate-400 pt-2 border-t border-slate-100/50">
+                      <span>By: <strong className="text-slate-700">{f.name || 'Anonymous'}</strong></span>
+                      {f.email && (
+                        <span>Email: <a href={`mailto:${f.email}`} className="text-brand-600 hover:underline">{f.email}</a></span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              {data.feedback.length === 0 && (
+                <EmptyState title="No feedback yet" description="Feedback submitted by users will show up here." />
+              )}
             </div>
           )}
         </div>

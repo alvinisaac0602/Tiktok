@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { trackEvent, trackCustomEvent } from '../lib/analytics'
 import { Spinner, ErrorCard } from '../components/UI'
+import toast from 'react-hot-toast'
 import {
   ShoppingCart, Star, Shield, Truck, ChevronLeft,
   ChevronRight, Flame, Users, Share2, Heart, Store,
@@ -40,6 +41,35 @@ export default function StorePage() {
   const [imgIndex, setImgIndex] = useState(0)
   const [liked, setLiked] = useState(false)
   const [pulse, setPulse] = useState(false)
+
+  // Store Feedback states
+  const [fbName, setFbName] = useState('')
+  const [fbMsg, setFbMsg] = useState('')
+  const [fbSubmitting, setFbSubmitting] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault()
+    if (!fbMsg.trim()) return
+    setFbSubmitting(true)
+    try {
+      const { error } = await supabase.from('feedback').insert({
+        source: 'store_page',
+        store_slug: storeSlug || 'unknown',
+        name: fbName.trim() || null,
+        message: fbMsg.trim(),
+      })
+      if (error) throw error
+      setFeedbackSubmitted(true)
+      toast.success('Thank you for your feedback!')
+      trackCustomEvent('store_feedback_submit_success', { store_slug: storeSlug })
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to submit feedback: ' + err.message)
+    } finally {
+      setFbSubmitting(false)
+    }
+  }
 
   useEffect(() => {
     // Pulse the buy button periodically
@@ -397,6 +427,49 @@ export default function StorePage() {
               <p className="text-xs text-slate-500 leading-tight whitespace-pre-line">{label}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Store Feedback Section */}
+      <div className="max-w-lg mx-auto mt-6 mb-24 px-4">
+        <div className="card bg-slate-50 border border-slate-200/60 p-5 space-y-3">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+            <MessageCircle size={16} className="text-brand-500" />
+            <span>Store Feedback</span>
+          </div>
+          <p className="text-xs text-slate-500 leading-normal">
+            How is your shopping experience? Let us know how we can improve this storefront.
+          </p>
+          {feedbackSubmitted ? (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl p-3 text-center">
+              🎉 Thank you for your feedback!
+            </div>
+          ) : (
+            <form onSubmit={handleFeedbackSubmit} className="space-y-2.5">
+              <input 
+                type="text" 
+                value={fbName}
+                onChange={e => setFbName(e.target.value)}
+                placeholder="Your Name (optional)" 
+                className="input text-xs py-2 bg-white" 
+              />
+              <textarea 
+                value={fbMsg}
+                onChange={e => setFbMsg(e.target.value)}
+                placeholder="What can we improve? (required)" 
+                rows={2}
+                className="input text-xs py-2 bg-white resize-none"
+                required
+              />
+              <button 
+                type="submit" 
+                disabled={fbSubmitting}
+                className="w-full btn-secondary text-xs py-2 rounded-xl font-semibold justify-center"
+              >
+                {fbSubmitting ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
