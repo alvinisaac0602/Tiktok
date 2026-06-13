@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
-import { trackEvent } from '../lib/analytics'
+import { trackEvent, trackCustomEvent } from '../lib/analytics'
 import { Spinner, ErrorCard } from '../components/UI'
 import {
   ShoppingCart, Star, Shield, Truck, ChevronLeft,
@@ -164,22 +164,30 @@ export default function StorePage() {
   )
 
   const handleBuy = (prod) => {
+    trackCustomEvent('store_page_buy_now_click', { product_id: prod.id, title: prod.title, price: prod.price })
     const params = creatorRef ? `?ref=${creatorRef}` : ''
     navigate(`/checkout/${prod.id}${params}`)
   }
 
   const selectProduct = (prod) => {
+    trackCustomEvent('store_page_product_select', { product_id: prod.id, title: prod.title })
     const refParam = creatorRef ? `&ref=${creatorRef}` : ''
     navigate(`/store/${storeSlug}?p=${prod.id}${refParam}`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const images = featuredProduct?.images?.length ? featuredProduct.images : [DEMO_PRODUCT.images[0]]
-  const prevImg = () => setImgIndex((i) => (i === 0 ? images.length - 1 : i - 1))
-  const nextImg = () => setImgIndex((i) => (i === images.length - 1 ? 0 : i + 1))
+  const prevImg = () => {
+    trackCustomEvent('store_page_gallery_nav', { direction: 'prev', product_id: featuredProduct?.id })
+    setImgIndex((i) => (i === 0 ? images.length - 1 : i - 1))
+  }
+  const nextImg = () => {
+    trackCustomEvent('store_page_gallery_nav', { direction: 'next', product_id: featuredProduct?.id })
+    setImgIndex((i) => (i === images.length - 1 ? 0 : i + 1))
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32 page-enter">
+    <div className="min-h-screen bg-slate-50 pb-44 page-enter">
       
       {/* Store Header Bio */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-900 text-white px-4 py-8">
@@ -198,12 +206,12 @@ export default function StorePage() {
 
           <div className="flex gap-2 pt-1">
             {vendor?.store_phone && (
-              <a href={`tel:${vendor.store_phone}`} className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-3.5 py-1.5 transition-all text-white/90">
+              <a href={`tel:${vendor.store_phone}`} onClick={() => trackCustomEvent('store_page_call_click', { store_slug: storeSlug, phone: vendor.store_phone })} className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 border border-white/10 rounded-full px-3.5 py-1.5 transition-all text-white/90">
                 <Phone size={12} /> Call
               </a>
             )}
             {(vendor?.store_whatsapp || vendor?.store_phone) && (
-              <a href={`https://wa.me/${(vendor.store_whatsapp || vendor.store_phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+              <a href={`https://wa.me/${(vendor.store_whatsapp || vendor.store_phone).replace(/\D/g, '')}`} onClick={() => trackCustomEvent('store_page_whatsapp_click', { store_slug: storeSlug, phone: vendor.store_whatsapp || vendor.store_phone })} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/20 rounded-full px-3.5 py-1.5 transition-all text-emerald-300">
                 <MessageCircle size={12} /> WhatsApp
               </a>
@@ -217,7 +225,7 @@ export default function StorePage() {
         <div className="max-w-lg mx-auto mt-4 space-y-4 px-4">
           
           {/* Image Gallery */}
-          <div className="relative bg-black overflow-hidden rounded-3xl shadow-card" style={{ height: '55vw', maxHeight: 380 }}>
+          <div className="relative bg-black overflow-hidden rounded-3xl shadow-card aspect-square w-full">
             <img
               src={images[imgIndex]}
               alt={featuredProduct.title}
@@ -230,13 +238,19 @@ export default function StorePage() {
             {/* Share + Like */}
             <div className="absolute top-4 right-4 flex gap-2">
               <button
-                onClick={() => navigator.share?.({ title: featuredProduct.title, url: window.location.href })}
+                onClick={() => {
+                  trackCustomEvent('store_page_share_click', { product_id: featuredProduct?.id })
+                  navigator.share?.({ title: featuredProduct.title, url: window.location.href })
+                }}
                 className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center"
               >
                 <Share2 size={16} />
               </button>
               <button
-                onClick={() => setLiked(!liked)}
+                onClick={() => {
+                  trackCustomEvent('store_page_like_toggle', { product_id: featuredProduct?.id, liked: !liked })
+                  setLiked(!liked)
+                }}
                 className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-all"
               >
                 <Heart size={16} fill={liked ? '#ef4444' : 'none'} color={liked ? '#ef4444' : 'white'} />

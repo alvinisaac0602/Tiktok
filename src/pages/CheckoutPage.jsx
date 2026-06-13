@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { initiatePayment, formatUGX, getFlutterwaveConfigError } from '../lib/flutterwave'
-import { trackEvent } from '../lib/analytics'
+import { trackEvent, trackCustomEvent } from '../lib/analytics'
 import { Spinner } from '../components/UI'
 import toast from 'react-hot-toast'
 import {
@@ -69,6 +69,7 @@ export default function CheckoutPage() {
   }
 
   const handleGPS = () => {
+    trackCustomEvent('checkout_gps_click', { product_id: product?.id })
     if (!navigator.geolocation) { toast.error('GPS not supported'); return }
     setGpsLoading(true)
     navigator.geolocation.getCurrentPosition(
@@ -84,6 +85,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    trackCustomEvent('checkout_submit_click', { product_id: product?.id, payment_method: paymentMethod })
     if (!validate()) return
     setSubmitting(true)
     try {
@@ -202,12 +204,12 @@ export default function CheckoutPage() {
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
             <span className="text-sm font-semibold text-slate-700">Quantity</span>
             <div className="flex items-center gap-3">
-              <button onClick={() => setQty(q => Math.max(1, q - 1))}
+              <button onClick={() => { setQty(q => Math.max(1, q - 1)); trackCustomEvent('checkout_qty_decrement', { product_id: product?.id, new_qty: Math.max(1, qty - 1) }) }}
                 className="w-8 h-8 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-600 hover:border-brand-400 transition-colors">
                 <Minus size={14} />
               </button>
               <span className="text-lg font-bold w-6 text-center">{qty}</span>
-              <button onClick={() => setQty(q => q + 1)}
+              <button onClick={() => { setQty(q => q + 1); trackCustomEvent('checkout_qty_increment', { product_id: product?.id, new_qty: qty + 1 }) }}
                 className="w-8 h-8 rounded-xl border-2 border-brand-300 bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 transition-colors">
                 <Plus size={14} />
               </button>
@@ -229,7 +231,7 @@ export default function CheckoutPage() {
               { key: 'online', icon: <CreditCard size={20} />, label: 'Pay Online', sub: 'MTN / Airtel / Card' },
               { key: 'cod',    icon: <Banknote size={20} />, label: 'Pay on Delivery', sub: 'Cash when it arrives' },
             ].map(({ key, icon, label, sub }) => (
-              <button key={key} type="button" onClick={() => setPaymentMethod(key)}
+              <button key={key} type="button" onClick={() => { setPaymentMethod(key); trackCustomEvent('checkout_payment_method_select', { method: key, product_id: product?.id }) }}
                 className={`flex flex-col items-center gap-2 py-4 px-3 rounded-2xl border-2 transition-all text-center ${
                   paymentMethod === key
                     ? 'border-brand-500 bg-brand-50 text-brand-700'

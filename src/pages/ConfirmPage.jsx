@@ -189,7 +189,7 @@ export default function ConfirmPage() {
             </a>
           )}
           <button
-            onClick={() => navigator.share?.({ title: 'Check out this product!', url: window.location.origin + `/p/${order?.product_id || 'demo'}` })}
+            onClick={() => navigator.share?.({ title: 'Check out this product!', url: window.location.origin + `/b/${order?.product_id || 'demo'}` })}
             className="btn-secondary w-full">
             <Share2 size={16} /> Share This Product
           </button>

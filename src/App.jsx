@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { Analytics } from '@vercel/analytics/react'
 import ProductPage from './pages/ProductPage'
 import CheckoutPage from './pages/CheckoutPage'
 import ConfirmPage from './pages/ConfirmPage'
@@ -16,6 +17,7 @@ import LandingPage from './pages/LandingPage'
 export default function App() {
   return (
     <BrowserRouter>
+      <Analytics />
       <Toaster
         position="top-center"
         toastOptions={{
@@ -35,6 +37,7 @@ export default function App() {
       <Routes>
         {/* Customer-facing routes */}
         <Route path="/p/:productId"      element={<ProductPage />} />
+        <Route path="/b/:productId"      element={<ProductPage />} />
         <Route path="/store/:storeSlug"  element={<StorePage />} />
         <Route path="/checkout/:productId" element={<CheckoutPage />} />
         <Route path="/confirm/:orderId"  element={<ConfirmPage />} />

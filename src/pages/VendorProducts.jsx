@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { useVendorAuth } from '../hooks/useRealtimeOrders'
+import { trackCustomEvent } from '../lib/analytics'
 import { Spinner, PageLoader, EmptyState } from '../components/UI'
 import { Navbar } from '../components/Navbar'
 import toast from 'react-hot-toast'
@@ -201,6 +202,7 @@ function ProductModal({ product, vendorId, onClose, onSaved }) {
         toast.error('Failed to save product: ' + (res.error.message || JSON.stringify(res.error)))
       } else {
         toast.success(isEdit ? 'Product updated!' : 'Product created!')
+        trackCustomEvent(isEdit ? 'vendor_product_update_success' : 'vendor_product_create_success', { product_id: res.data?.id || product?.id, title: form.title })
         onSaved()
       }
     } catch (err) {
@@ -264,29 +266,30 @@ function ProductModal({ product, vendorId, onClose, onSaved }) {
 function LinkGenerator({ product, storeSlug }) {
   const [open, setOpen] = useState(false)
   const [creator, setCreator] = useState('')
-  const base = storeSlug
-    ? `${window.location.origin}/store/${storeSlug}?p=${product.id}`
-    : `${window.location.origin}/p/${product.id}`
-  const link = creator.trim() ? `${base}&ref=${creator.trim().replace('@', '')}` : base
+  const base = `${window.location.origin}/b/${product.id}`
+  const link = creator.trim() ? `${base}?ref=${creator.trim().replace('@', '')}` : base
 
   const copyLink = () => {
+    trackCustomEvent('vendor_creator_link_copy', { product_id: product.id, creator: creator.trim() })
     navigator.clipboard.writeText(link)
     toast.success('Link copied!')
   }
 
   const shareWhatsApp = () => {
+    trackCustomEvent('vendor_creator_link_share_whatsapp', { product_id: product.id, creator: creator.trim() })
     const msg = `🛍️ Check out *${product.title}* — ${formatUGX(product.price)}\n\nBuy here: ${link}`
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   const shareTikTok = () => {
+    trackCustomEvent('vendor_creator_link_share_tiktok', { product_id: product.id, creator: creator.trim() })
     navigator.clipboard.writeText(link)
     toast.success('Link copied! Paste it in your TikTok bio or video description.')
   }
 
   return (
     <div className="mt-2">
-      <button onClick={() => setOpen(o => !o)}
+      <button onClick={() => { setOpen(o => !o); trackCustomEvent('vendor_creator_link_generator_toggle', { product_id: product.id, open: !open }) }}
         className="flex items-center gap-2 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">
         <Link2 size={13} /> Generate Creator Link {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
       </button>
@@ -383,7 +386,7 @@ export default function VendorProducts() {
             <p className="text-brand-300 text-sm">Product Management</p>
             <h1 className="font-display font-bold text-2xl">{vendor?.store_name}</h1>
           </div>
-          <button onClick={() => setModalProduct(null)} className="btn-primary bg-white/20 border border-white/30 hover:bg-white/30 shadow-none">
+          <button onClick={() => { setModalProduct(null); trackCustomEvent('vendor_add_product_click') }} className="btn-primary bg-white/20 border border-white/30 hover:bg-white/30 shadow-none">
             <Plus size={18} /> Add Product
           </button>
         </div>
@@ -397,7 +400,7 @@ export default function VendorProducts() {
             <EmptyState icon="📦" title="No products yet"
               subtitle="Create your first product and generate a creator link to share on TikTok!" />
             <div className="flex justify-center mt-4">
-              <button onClick={() => { if (!vendor?.id) { toast.error('Vendor profile not loaded yet. Refresh the page and try again.') ; return } setModalProduct(null) }} className="btn-primary">
+              <button onClick={() => { if (!vendor?.id) { toast.error('Vendor profile not loaded yet. Refresh the page and try again.') ; return } setModalProduct(null); trackCustomEvent('vendor_add_product_click') }} className="btn-primary">
                 <Plus size={16} /> Add Your First Product
               </button>
             </div>
@@ -427,15 +430,15 @@ export default function VendorProducts() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0 ml-auto sm:ml-0">
-                    <button onClick={() => toggleActive(product)} title={product.is_active ? 'Hide' : 'Show'}
+                    <button onClick={() => { toggleActive(product); trackCustomEvent('vendor_product_toggle_visibility', { product_id: product.id, is_active: !product.is_active }) }} title={product.is_active ? 'Hide' : 'Show'}
                       className="p-2 rounded-xl text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors">
                       {product.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
-                    <button onClick={() => setModalProduct(product)} title="Edit"
+                    <button onClick={() => { setModalProduct(product); trackCustomEvent('vendor_edit_product_click', { product_id: product.id }) }} title="Edit"
                       className="p-2 rounded-xl text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
                       <Pencil size={16} />
                     </button>
-                    <button onClick={() => deleteProduct(product.id)} title="Delete"
+                    <button onClick={() => { deleteProduct(product.id); trackCustomEvent('vendor_product_delete', { product_id: product.id }) }} title="Delete"
                       className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                       <Trash2 size={16} />
                     </button>

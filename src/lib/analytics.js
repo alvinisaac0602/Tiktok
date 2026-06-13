@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { track } from '@vercel/analytics/react'
 
 /** Get or create an anonymous session ID for this browser tab */
 function getSessionId() {
@@ -28,7 +29,20 @@ export async function trackEvent({
   orderId   = null,
   metadata  = {},
 }) {
-  // Skip tracking for demo products
+  // Also track with Vercel Analytics
+  try {
+    track(eventType, {
+      product_id: productId || 'none',
+      vendor_id: vendorId || 'none',
+      creator_ref: creatorRef || 'none',
+      order_id: orderId || 'none',
+      ...metadata
+    })
+  } catch (err) {
+    console.warn('[Vercel Analytics] track error:', err?.message)
+  }
+
+  // Skip database tracking for demo products
   if (productId === 'demo' || vendorId === 'demo-vendor') return
 
   try {
@@ -45,3 +59,17 @@ export async function trackEvent({
     console.warn('[Analytics] track error:', err?.message)
   }
 }
+
+/**
+ * Track custom user actions or button clicks
+ * @param {string} eventName
+ * @param {Object} [properties]
+ */
+export function trackCustomEvent(eventName, properties = {}) {
+  try {
+    track(eventName, properties)
+  } catch (err) {
+    console.warn('[Vercel Analytics] track custom event error:', err?.message)
+  }
+}
+

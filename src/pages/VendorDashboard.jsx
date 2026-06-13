@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/flutterwave'
 import { useRealtimeOrders, useVendorAuth } from '../hooks/useRealtimeOrders'
+import { trackCustomEvent } from '../lib/analytics'
 import {
   StatCard, StatusBadge, Spinner, EmptyState,
   NewOrderToast, PageLoader
@@ -15,6 +16,7 @@ import {
 
 function OrderRow({ order, expanded, onToggle, onStatusChange }) {
   const copyPhone = () => {
+    trackCustomEvent('vendor_order_copy_phone', { order_id: order.id })
     navigator.clipboard.writeText(order.customer_phone)
     toast.success('Phone number copied!')
   }
@@ -193,6 +195,7 @@ function OrderRow({ order, expanded, onToggle, onStatusChange }) {
                   <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">GPS Coordinates</p>
                   <a 
                     href={`https://maps.google.com?q=${order.customer_lat},${order.customer_lng}`}
+                    onClick={() => trackCustomEvent('vendor_order_gps_link_click', { order_id: order.id })}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 mt-1"
@@ -253,6 +256,7 @@ export default function VendorDashboard() {
   }, [newOrderAlert])
 
   const handleStatusChange = async (orderId, newStatus) => {
+    trackCustomEvent('vendor_order_status_change', { order_id: orderId, new_status: newStatus })
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
     if (error) toast.error('Failed to update status')
     else toast.success(`Order marked as ${newStatus}`)
@@ -309,7 +313,7 @@ export default function VendorDashboard() {
       <Navbar vendor={vendor} user={user} />
 
       {/* Welcoming Header with store name */}
-      <div className="bg-gradient-to-r from-brand-850 via-brand-700 to-accent-950 text-white px-4 py-8 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-brand-900 via-brand-700 to-accent-700 text-white px-4 py-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -362,6 +366,7 @@ export default function VendorDashboard() {
                 onClick={() => {
                   setActiveTab(tabKey)
                   setExpandedId(null)
+                  trackCustomEvent('vendor_dashboard_tab_click', { tab: tabKey })
                 }}
                 className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                   activeTab === tabKey
@@ -385,7 +390,7 @@ export default function VendorDashboard() {
           {/* Search Toolbar */}
           <div className="relative">
             <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="search" value={search} onChange={e => setSearch(e.target.value)}
+            <input type="search" value={search} onChange={e => { setSearch(e.target.value); if (e.target.value.length === 1) trackCustomEvent('vendor_dashboard_search') }}
               placeholder="Search phone number, customer name or items…" className="input pl-10 pr-4 py-3 rounded-2xl border-slate-200 shadow-sm bg-white" />
           </div>
 
@@ -408,7 +413,10 @@ export default function VendorDashboard() {
               {filtered.map(order => (
                 <OrderRow key={order.id} order={order}
                   expanded={expandedId === order.id}
-                  onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                  onToggle={() => {
+                    setExpandedId(expandedId === order.id ? null : order.id)
+                    trackCustomEvent('vendor_order_row_toggle', { order_id: order.id, expanded: expandedId !== order.id })
+                  }}
                   onStatusChange={handleStatusChange} />
               ))}
             </div>
@@ -433,12 +441,13 @@ export default function VendorDashboard() {
           </p>
           <div className="bg-white/10 rounded-2xl p-3 border border-white/10 flex items-center justify-between gap-2">
             <span className="font-mono text-xs text-slate-200 select-all truncate flex-1">
-              {window.location.origin}/store/{vendor?.store_slug || 'yourstore'}?p=PRODUCT_ID
+              {window.location.origin}/b/PRODUCT_ID
             </span>
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/store/${vendor?.store_slug || 'yourstore'}`)
                 toast.success('Store link copied!')
+                trackCustomEvent('vendor_dashboard_copy_store_link', { store_slug: vendor?.store_slug })
               }}
               className="text-white hover:text-brand-300 font-bold text-xs flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all"
             >
