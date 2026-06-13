@@ -91,7 +91,7 @@ export default function CheckoutPage() {
       const phone = form.customer_phone.replace(/\s/g, '')
       let orderId = `demo_${Date.now()}`
 
-      if (productId !== 'demo') {
+      if (product && product.id !== 'demo') {
         // 1. Create order
         const { data: order, error: orderErr } = await supabase
           .from('orders')
@@ -134,7 +134,7 @@ export default function CheckoutPage() {
         name: form.customer_name || 'TikTok Customer',
         description: `Order: ${product.title}`,
         onSuccess: async (response) => {
-          if (productId !== 'demo') {
+          if (product && product.id !== 'demo') {
             // Immediately confirm in Supabase (don't wait for webhook alone)
             await supabase.from('orders')
               .update({ status: 'paid', updated_at: new Date().toISOString() })
