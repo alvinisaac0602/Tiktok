@@ -88,11 +88,13 @@ export default function StorePage() {
         return
       }
 
+      const lookupSlug = (storeSlug || '').toLowerCase().trim().replace(/\/$/, '')
+
       // Fetch Vendor Store details
       const { data: vendorData, error: vendorErr } = await supabase
         .from('vendors')
         .select('*')
-        .eq('store_slug', storeSlug)
+        .eq('store_slug', lookupSlug)
         .eq('suspended', false)
         .single()
 
