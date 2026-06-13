@@ -118,9 +118,7 @@ export function useVendorAuth() {
         console.warn('Multiple vendor rows found for user:', user.id, data)
         return data[0]
       }
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        // no vendor found — continue to create
-      }
+
       // No vendor row found — create one using available metadata or fallbacks
       const storeName = user.user_metadata?.store_name || user.app_metadata?.store_name || (user.email ? user.email.split('@')[0] : 'My Store')
 
@@ -154,65 +152,67 @@ export function useVendorAuth() {
   }
 
   useEffect(() => {
-    let cancelled = false
+    let active = true
+    let initialized = false
 
-    const handleUser = async (sessionUser) => {
-      if (cancelled) return
-      setUser(sessionUser)
+    const handleSession = async (session) => {
+      if (!active) return
+      
+      const currentUser = session?.user || null
+      setUser(currentUser)
 
-      if (sessionUser) {
-        const vendorProfile = await fetchOrCreateVendor(sessionUser)
-        if (!cancelled) setVendor(vendorProfile)
+      if (currentUser) {
+        const vendorProfile = await fetchOrCreateVendor(currentUser)
+        if (active) {
+          setVendor(vendorProfile)
+          setLoading(false)
+        }
       } else {
-        setVendor(null)
-      }
-      if (!cancelled) setLoading(false)
-    }
-
-    // 1. Set up auth listener FIRST so we never miss events (e.g. from login redirect)
-    const { data: subscriptionData, error: subError } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          await handleUser(session?.user ?? null)
-        } catch (err) {
-          console.error('Auth state change failed:', err)
-          if (!cancelled) setLoading(false)
-        }
-      }
-    )
-
-    if (subError) console.error('onAuthStateChange error:', subError)
-    const subscription = subscriptionData?.subscription ?? subscriptionData
-
-    // 2. Read session from local storage (instant, no network call)
-    //    This covers the case where onAuthStateChange hasn't fired yet
-    const initFromSession = async () => {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession()
-        const sessionUser = sessionData?.session?.user ?? null
-        // Only use this if onAuthStateChange hasn't already set loading to false
-        if (!cancelled) {
-          await handleUser(sessionUser)
-        }
-      } catch (err) {
-        console.error('Session init failed:', err)
-        if (!cancelled) {
+        if (active) {
+          setVendor(null)
           setLoading(false)
         }
       }
     }
 
-    initFromSession()
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return
+      if (!initialized) {
+        initialized = true
+        handleSession(session)
+      }
+    }).catch((err) => {
+      console.error('getSession failed:', err)
+      if (active) setLoading(false)
+    })
+
+    // 2. Listen for auth changes
+    const { data: subscriptionData } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!active) return
+        
+        // Skip initial event if getSession already handled it
+        if (event === 'INITIAL_SESSION' && initialized) {
+          return
+        }
+        
+        initialized = true
+        handleSession(session)
+      }
+    )
+
+    const subscription = subscriptionData?.subscription ?? subscriptionData
 
     // 3. Safety fallback — if everything fails, stop loading after 8s
     const fallback = setTimeout(() => {
-      if (!cancelled) {
+      if (active && loading) {
         setLoading(false)
       }
     }, 8000)
 
     return () => {
-      cancelled = true
+      active = false
       clearTimeout(fallback)
       try { subscription?.unsubscribe?.() } catch (e) {}
     }
