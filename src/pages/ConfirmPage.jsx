@@ -26,12 +26,13 @@ export default function ConfirmPage() {
           status: isCOD ? 'pending_cod' : 'paid',
           customer_location_zone: 'Kampala Central',
           products: { title: 'Premium Wireless Earbuds Pro' },
+          vendors: { store_name: 'Demo Store', store_slug: 'demo-store' }
         })
         setLoading(false)
         return
       }
       const { data } = await supabase
-        .from('orders').select('*, products(title, images), vendors(store_name, store_phone, store_whatsapp)')
+        .from('orders').select('*, products(title, images), vendors(store_name, store_phone, store_whatsapp, store_slug)')
         .eq('id', orderId).single()
       setOrder(data)
       setLoading(false)
@@ -193,7 +194,7 @@ export default function ConfirmPage() {
             className="btn-secondary w-full">
             <Share2 size={16} /> Share This Product
           </button>
-          <Link to="/p/demo" className="btn-primary w-full">
+          <Link to={`/store/${order?.vendors?.store_slug || 'demo-store'}`} className="btn-primary w-full">
             Shop More <ArrowRight size={16} />
           </Link>
         </div>
