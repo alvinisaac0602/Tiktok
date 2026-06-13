@@ -20,6 +20,9 @@ export default function LandingPage() {
   const [simZone, setSimZone] = useState('Kampala Central')
   const [simMethod, setSimMethod] = useState('cod')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // Pricing tab state ('standard' or 'enterprise')
+  const [pricingTab, setPricingTab] = useState('standard')
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -419,115 +422,260 @@ export default function LandingPage() {
                 Simple, Transparent Plans
               </h2>
               <p className="text-slate-500 text-base max-w-xl mx-auto">
-                Start selling free today and scale up your business as you grow. No hidden setups.
+                Scale up your social commerce business with plans built for creators, growing vendors, and large retail brands.
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               
-              {/* Starter Plan */}
-              <div className="card bg-white flex flex-col justify-between border-slate-200">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-slate-900">Starter</h3>
-                    <p className="text-xs text-slate-400 mt-1">Perfect for small creators & testers</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-slate-900">UGX 0</span>
-                    <span className="text-xs text-slate-400">/ forever</span>
-                  </div>
-                  <hr className="border-slate-100" />
-                  <ul className="space-y-2.5 text-xs text-slate-600">
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Up to 5 active products
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Standard creator tracking
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Mobile Money & Cash on Delivery
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Real-time order alerts
-                    </li>
-                  </ul>
+              {/* Toggle Switch */}
+              <div className="flex justify-center pt-2">
+                <div className="relative flex bg-slate-200/60 p-1 rounded-2xl border border-slate-200/80">
+                  <button
+                    onClick={() => setPricingTab('standard')}
+                    className={`relative z-10 px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      pricingTab === 'standard'
+                        ? 'bg-white text-brand-700 shadow-sm font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Standard Plans
+                  </button>
+                  <button
+                    onClick={() => setPricingTab('enterprise')}
+                    className={`relative z-10 px-6 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      pricingTab === 'enterprise'
+                        ? 'bg-white text-brand-700 shadow-sm font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Enterprise Plans
+                  </button>
                 </div>
-                <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
-                  Get Started Free
-                </Link>
               </div>
-
-              {/* Growth Plan (Popular) */}
-              <div className="card bg-white border-brand-500 shadow-lg relative flex flex-col justify-between transform md:-translate-y-2">
-                <div className="absolute top-0 right-6 -translate-y-1/2 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                  Popular
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-slate-900">Growth</h3>
-                    <p className="text-xs text-slate-400 mt-1">For scaling stores & active vendors</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-brand-700">UGX 75,000</span>
-                    <span className="text-xs text-slate-400">/ month</span>
-                  </div>
-                  <hr className="border-slate-100" />
-                  <ul className="space-y-2.5 text-xs text-slate-600">
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Unlimited products
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Advanced creator payout dashboard
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Full analytics & event funnel
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Custom store slug (/store/your-name)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Premium WhatsApp notifications
-                    </li>
-                  </ul>
-                </div>
-                <Link to="/vendor/login?mode=register" className="w-full btn-primary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
-                  Start Growth Plan
-                </Link>
-              </div>
-
-              {/* Enterprise Plan */}
-              <div className="card bg-white flex flex-col justify-between border-slate-200">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-slate-900">Enterprise</h3>
-                    <p className="text-xs text-slate-400 mt-1">For established retail brands</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-slate-900">UGX 199,000</span>
-                    <span className="text-xs text-slate-400">/ month</span>
-                  </div>
-                  <hr className="border-slate-100" />
-                  <ul className="space-y-2.5 text-xs text-slate-600">
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Custom domain integration
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Dedicated API access
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Dedicated support manager
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={12} className="text-emerald-500" /> Lower transaction fee override
-                    </li>
-                  </ul>
-                </div>
-                <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
-                  Contact Sales
-                </Link>
-              </div>
-
             </div>
+
+            {pricingTab === 'standard' ? (
+              <div key="standard" className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto animate-fade-in">
+                {/* Starter Plan */}
+                <div className="card bg-white flex flex-col justify-between border-slate-200">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Starter</h3>
+                      <p className="text-xs text-slate-400 mt-1">Perfect for small creators & side hustlers</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900">UGX 10,000</span>
+                      <span className="text-xs text-slate-400">/ month</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Up to 10 active products
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Standard creator tracking
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Mobile Money & Cash on Delivery
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Real-time order alerts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Basic email support
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Start Starter Plan
+                  </Link>
+                </div>
+
+                {/* Growth Plan (Popular) */}
+                <div className="card bg-white border-brand-500 shadow-lg relative flex flex-col justify-between transform md:-translate-y-2">
+                  <div className="absolute top-0 right-6 -translate-y-1/2 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Popular
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Growth</h3>
+                      <p className="text-xs text-slate-400 mt-1">For scaling stores & active vendors</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-brand-700">UGX 40,000</span>
+                      <span className="text-xs text-slate-400">/ month</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Unlimited products
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Advanced creator payout dashboard
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Full analytics & event funnel
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Custom store slug (/store/your-name)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Premium WhatsApp notifications
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> 24/7 priority support
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-primary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Start Growth Plan
+                  </Link>
+                </div>
+
+                {/* Professional Plan */}
+                <div className="card bg-white flex flex-col justify-between border-slate-200">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Professional</h3>
+                      <p className="text-xs text-slate-400 mt-1">For established retail brands</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900">UGX 80,000</span>
+                      <span className="text-xs text-slate-400">/ month</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Custom domain integration
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Dedicated API access
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Up to 3 staff accounts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Lower transaction fee override
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Dedicated support manager
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Start Pro Plan
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div key="enterprise" className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto animate-fade-in">
+                {/* Retail Chain */}
+                <div className="card bg-white flex flex-col justify-between border-slate-200">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Retail Chain</h3>
+                      <p className="text-xs text-slate-400 mt-1">For multi-brand retail operations</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900">UGX 150,000</span>
+                      <span className="text-xs text-slate-400">/ month</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Up to 5 distinct storefronts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Up to 15 staff accounts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Centralized inventory & routing
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Advanced customer CRM integration
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Onboarding assistance & training
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Deploy Retail Suite
+                  </Link>
+                </div>
+
+                {/* Agency Partner (Popular) */}
+                <div className="card bg-white border-brand-500 shadow-lg relative flex flex-col justify-between transform md:-translate-y-2">
+                  <div className="absolute top-0 right-6 -translate-y-1/2 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Best Value
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Agency Partner</h3>
+                      <p className="text-xs text-slate-400 mt-1">For marketing agencies & creator managers</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-brand-700">UGX 350,000</span>
+                      <span className="text-xs text-slate-400">/ month</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Unlimited client storefronts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Consolidated agency dashboard
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> White-labeled creator portal
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Custom commission payouts
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Priority feature request channel
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-primary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Become Agency Partner
+                  </Link>
+                </div>
+
+                {/* Custom Enterprise */}
+                <div className="card bg-white flex flex-col justify-between border-slate-200">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">Custom Enterprise</h3>
+                      <p className="text-xs text-slate-400 mt-1">For national brands & custom logistics</p>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900">Custom</span>
+                      <span className="text-xs text-slate-400">/ tailor-made</span>
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="space-y-2.5 text-xs text-slate-600">
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Dedicated database instances
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> 0% transaction fee override
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> SLA uptime agreements
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> Custom API integrations & sync
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={12} className="text-emerald-500" /> 24/7/365 dedicated hotline
+                      </li>
+                    </ul>
+                  </div>
+                  <Link to="/vendor/login?mode=register" className="w-full btn-secondary text-xs mt-6 text-center py-2.5 rounded-xl font-semibold">
+                    Contact Enterprise Sales
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
